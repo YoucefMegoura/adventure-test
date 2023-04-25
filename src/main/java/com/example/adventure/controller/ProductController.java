@@ -9,45 +9,46 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @ResponseBody
-@Controller
+@RestController("/products")
 public class ProductController {
-
-    private final ProductRepository productRepository;
-
     private final ProductService productService;
 
-    public ProductController(ProductRepository productRepository, ProductService productService) {
-        this.productRepository = productRepository;
+    public ProductController(ProductService productService) {
         this.productService = productService;
     }
 
-    @GetMapping("/products")
+    @GetMapping()
     public List<Product> findAll() {
-        List<Product> products = new ArrayList<>();
-        for(Product product: productRepository.findAll()) {
-            products.add(product);
-        }
+        List<Product> products = productService.findAll();
         return products;
     }
 
-    @GetMapping("/products/{id}")
+    @GetMapping("/{id}")
     public ResponseEntity<Product> find(@PathVariable int id) throws Exception {
-        return ResponseEntity.ok(this.productRepository.findById(id).orElseThrow(() -> new Exception("Product not found")));
+        Optional<Product> product = productService.findById(id);
+        if (product.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(product.get());
     }
 
-    @PostMapping("/products/")
+    @PostMapping()
     public Product save(@RequestBody Product product) {
-        return this.productRepository.save(product);
+        return productService.save(product);
     }
 
-    @DeleteMapping("/products/{id}")
-    public void delete(@PathVariable int id) {
-        this.productRepository.deleteById(id);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable int id) {
+        if (productService.deleteById(id)) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/products/inventory")
+    @GetMapping("/inventory")
     public ProductService.Inventory getInventory() {
         return this.productService.getProductsData();
     }
